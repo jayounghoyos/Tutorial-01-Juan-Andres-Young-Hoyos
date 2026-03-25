@@ -2,11 +2,10 @@
 import BookReviews from '@/components/BookReviews.vue';
 import { BookService } from '@/services/BookService.js';
 import { useRoute } from 'vue-router';
+import type { BookInterface } from '@/interfaces/BookInterface.js';
+import { onMounted, ref } from 'vue';
 
-
-const route = useRoute();
-const bookId = Number(route.params.id);
-const book = BookService.getBookById(bookId);
+const book = ref<BookInterface | null>(null);
 
 // functions
 function formatToCOP(price: number): string {
@@ -19,6 +18,12 @@ function formatToCOP(price: number): string {
 
   return formatter.format(price).replace(/^\s*\$\s?/, '');
 }
+
+onMounted(async () => {
+  const route = useRoute();
+  const bookId = Number(route.params.id);
+  book.value = await BookService.getBookById(bookId);
+});
 </script>
 
 <template>
@@ -54,25 +59,19 @@ function formatToCOP(price: number): string {
               <div class="space-y-3">
                 <div class="flex justify-between">
                   <span class="text-gray-600">Title:</span>
-                  <span class="font-medium">
-                    {{ book.title }}
-                  </span>
+                  <span class="font-medium">{{ book.title }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Category:</span>
-                  <span class="font-medium">
-                    {{ book.category }}
-                  </span>
+                  <span class="font-medium">{{ book.category }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Price:</span>
-                  <span class="font-medium">${{formatToCOP(book.price) }} COP</span>
+                  <span class="font-medium">${{ formatToCOP(book.price) }} COP</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Stock:</span>
-                  <span class="font-medium">
-                    {{ book.stock }}
-                  </span>
+                  <span class="font-medium">{{ book.stock }}</span>
                 </div>
               </div>
             </div>
