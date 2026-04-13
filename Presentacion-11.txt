@@ -1,0 +1,218 @@
+Tutorial 08 para hacer en clase – Recuerde subir su enlace del
+repositorio antes de finalizar la clase.
+Antes de iniciar:
+•
+•
+
+Recuerde terminar los tutoriales anteriores (ya que son acumulativos).
+Este tutorial muestra cómo desplegar los proyectos “frontend” y “backend” usando Docker
+y Docker-compose.
+
+A.Creación de la máquina virtual
+Crear la máquina virtual para desplegar el proyecto
+•
+•
+
+Siga los pasos A, B, C y D del “Tutorial-GCP-Completo” para crear una nueva máquina virtual.
+Una vez creada esa máquina, ya tendrá instalado Docker y Docker Compose.
+Ahora, guarde la dirección IP que le arroja esa máquina (ver siguiente imagen).
+
+B. Modificación del Backend
+Modificar app.module.ts:
+•
+
+Ubicado en la carpeta raíz del proyecto (“backend”), modifique el archivo src/app.module.ts
+según lo que se resalta en negrilla en el siguiente código:
+Modifique según la negrilla
+
+…
+@Module({
+imports: [
+TypeOrmModule.forRoot({
+type: 'sqlite',
+database: process.env.SQLITE_PATH ?? 'database.sqlite',
+autoLoadEntities: true,
+synchronize: true,
+}),
+HomeModule,
+BooksModule,
+],
+})
+export class AppModule {}
+
+Modificar main.ts:
+•
+
+Ubicado en la carpeta raíz del proyecto (“backend”), modifique el archivo src/main.ts según
+lo que se resalta en negrilla en el siguiente código:
+Modifique según la negrilla
+
+…
+async function bootstrap() {
+const app = await NestFactory.create(AppModule);
+const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim());
+app.enableCors({
+origin: corsOrigins?.length ? corsOrigins : ['http://localhost:5173', 'http://localhost',
+'http://127.0.0.1'],
+});
+
+app.setGlobalPrefix('api');
+await app.listen(process.env.PORT ?? 3000);
+}
+void bootstrap();
+
+Crear el .dockerignore
+•
+
+Ubicado en la carpeta raíz del proyecto (“backend”), cree el archivo .dockerignore con el
+siguiente contenido:
+Añadir todo este código
+
+node_modules
+coverage
+.git
+.gitignore
+*.md
+test
+.env
+.env.*
+
+Crear el Dockerfile
+•
+
+Ubicado en la carpeta raíz del proyecto (“backend”), cree el archivo Dockerfile con el
+siguiente contenido:
+Añadir todo este código
+
+FROM node:22-bookworm-slim
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package*.json ./
+RUN npm install --omit=dev
+COPY dist ./dist
+EXPOSE 3000
+CMD ["node", "dist/main.js"]
+
+Compilar el proyecto local
+•
+
+Ejecute el siguiente comando ubicado en la carpeta raíz de su proyecto “backend”:
+
+Ejecutar en Terminal
+npm run build
+
+Dejar de ignorar la carpeta “dist” de “backend” (SOLO aplicar este cambio SI cuenta con el gitnore
+correspondiente)
+•
+
+Modifique el archivo .gitignore de la carpeta “backend” según lo que se resalta en negrilla
+en el siguiente código:
+Modifique según la negrilla
+
+# compiled output
+dist/
+/node_modules
+/build
+…
+
+C. Modificación del Frontend
+Crear el .dockerignore
+•
+
+Ubicado en la carpeta raíz del proyecto (“frontend”), cree el archivo .dockerignore con el
+siguiente contenido:
+Añadir todo este código
+
+node_modules
+.git
+.gitignore
+*.md
+
+Crear el .env
+•
+
+Ubicado en la carpeta raíz del proyecto (“frontend”), cree el archivo .env con el siguiente
+contenido (cambie la IP por la IP de su máquina):
+Añadir todo este código
+
+VITE_API_BASE_URL=http://35.239.112.107:3000
+
+Compilar el proyecto local
+•
+
+Ejecute el siguiente comando ubicado en la carpeta raíz de su proyecto “frontend”:
+Ejecutar en Terminal
+
+npm run build
+
+Crear el docker-compose.yml
+•
+
+Ubicado en la carpeta raíz (“courseprojects”), cree el archivo docker-compose.yml con el
+siguiente contenido (cambie la IP por la IP de su máquina):
+Añadir todo este código
+
+services:
+backend:
+build:
+context: ./backend
+ports:
+- "3000:3000"
+environment:
+PORT: 3000
+SQLITE_PATH: /data/database.sqlite
+
+CORS_ORIGIN: "http://
+35.239.112.107,http://127.0.0.1:8080,http://localhost,http://127.0.0.1,http://localhost:5173"
+volumes:
+- backend-data:/data
+frontend:
+build:
+context: ./frontend
+ports:
+- "80:80"
+depends_on:
+- backend
+volumes:
+backend-data:
+
+•
+
+Suba el código a GitHub.
+
+D. Despliegue
+Desplegar el proyecto
+•
+•
+
+Acceda por SSH a la máquina virtual.
+Cree una regla de firewall que permita acceder al puerto 3000. Pregúntele a ChatGPT como
+hacerlo, o tome de base el siguiente pantallazo.
+
+•
+•
+•
+
+Clone su repositorio GitHub.
+Ubíquese dentro de la carpeta principal de su repositorio.
+Ejecute el siguiente comando ubicado en la carpeta que contiene el docker-compose.yml:
+Ejecutar en Terminal
+
+docker compose up -d
+
+•
+
+Si todo sale bien, deberá ver desplegada en la dirección IP de su proyecto el proyecto
+FullStack (ver siguientes figuras).
+
+Felicidades acaba de desplegar su proyecto FullStack en la nube. Sin embargo, hay muchas cosas
+por mejorar y automatizar en el despliegue anterior. Por ejemplo:
+•
+•
+
+Podría omitir subir las carpetas DIST a GitHub. Y en su lugar utilizar una máquina e2medium que le permita hacer los builds desde los Dockerfiles.
+Podría buscar alternativas para definir la IP de CORS, y la IP de VITE de una manera más
+automática.
+• Podría cambiar el sistema para utilizar MySQL y no SQLite.
+
+

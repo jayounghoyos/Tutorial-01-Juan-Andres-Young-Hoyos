@@ -1,0 +1,176 @@
+Tutorial Despliegue Vue con GCP
+Antes de iniciar:
+•
+•
+
+Este tutorial muestra cómo manipular desplegar proyectos Vue en Google Cloud Computing
+(GCP).
+Antes de realizar este tutorial debe revisar su correo electrónico, ya que el docente le
+envío instrucciones para reclamar $50 créditos de GCP.
+
+A.Creando una máquina virtual
+Crear la máquina virtual
+1. Conéctese a https://console.cloud.google.com/ y verifique que se encuentra logueado con
+su cuenta EAFIT.
+
+2. Vaya a “Compute Engine” (desde el menú hamburguesa) y active el uso de este servicio (si
+la primera vez que se conecta, le tocará antes crear un proyecto, y ponga el nombre que
+desee a ese proyecto, ejemplo: “2026-1”).
+
+3. Vaya a “VM Instances” y luego de click en “Create Instance”.
+
+4. En la pestaña “Machine Configuration” póngale de nombre “proyecto-vue”.
+
+5. En la pestaña “Machine Configuration” póngale en “Machine Type” “e2-micro”.
+
+6. En la pestaña “OS and storage” verifique que “Image” es “Debian 12”.
+
+7. En la pestaña “Networking” seleccione “Allow HTTP Traffic” y “Allow HTTPS traffic”. Y
+finalmente de click en “Crear”. Nota: luego de un par de minutos deberá poder ver la
+instancia creada.
+
+B. Accediendo a una máquina virtual
+Acceder a la máquina virtual
+1. En “VM Instances”, de Click en “SSH” en la instancia que acabó de crear.
+
+•
+
+Debería observar una nueva pestaña con la conexión SSH a la instancia que acabó de crear.
+
+C. Configurando el proyecto Vue para desplegarlo
+Compilar el proyecto local
+•
+
+Ejecute el siguiente comando ubicado en la carpeta raíz de su proyecto “frontend”:
+Ejecutar en Terminal
+
+npm run build
+
+Dejar de ignorar la carpeta Dist de “courseprojects” (SOLO aplicar este cambio SI cuenta con el
+gitnore correspondiente)
+•
+
+Modifique el archivo .gitignore de la carpeta “courseprojects” según lo que se resalta en
+negrilla en el siguiente código:
+Modifique según la negrilla
+
+…
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+…
+
+Dejar de ignorar la carpeta Dist de “frontend” (SOLO aplicar este cambio SI cuenta con el gitnore
+correspondiente)
+•
+
+Modifique el archivo .gitignore de la carpeta “frontend” según lo que se resalta en negrilla
+en el siguiente código:
+Modifique según la negrilla
+
+…
+node_modules
+.DS_Store
+dist
+dist-ssr
+coverage
+…
+
+Crear el archivo de configuración de nginx
+•
+
+Ubicado en el proyecto “frontend”, cree el archivo nginx.conf con el siguiente contenido:
+
+Añadir todo este código
+server {
+listen 80;
+server_name localhost;
+root /usr/share/nginx/html;
+index index.html;
+# SPA fallback: serve index.html for client-side routes
+location / {
+try_files $uri $uri/ /index.html;
+}
+# Cache static assets
+location /assets/ {
+expires 1y;
+add_header Cache-Control "public, immutable";
+}
+}
+
+Crear el archivo de configuración de Docker
+•
+
+Ubicado en el proyecto “frontend”, cree el archivo Dockerfile con el siguiente contenido:
+Añadir todo este código
+
+FROM nginx:alpine
+# Copy pre-built dist folder
+COPY dist/ /usr/share/nginx/html/
+# Copy nginx config for SPA routing
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+
+Subir cambios a GitHub
+•
+
+Suba los cambios a GitHub (verifique que la carpeta “frontend/dist” será cargada).
+
+D.Instalando Docker
+Instalar Docker en la máquina virtual
+1. Ejecute uno a uno los siguientes comandos en la terminal de la máquina virtual:
+Ejecutar en Terminal
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gnupg2 software-properties-common
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian buster
+stable"
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+
+Verificación de Docker
+2. Ejecute el siguiente comando en la terminal de la máquina virtual:
+Ejecutar en Terminal
+docker -v
+
+•
+
+Si todo sale bien, deberá observar algo como la siguiente figura.
+
+E. Desplegando proyecto Vue con Docker
+Descargar el proyecto
+1. Identifique el usuario y nombre de su repositorio donde tiene el proyecto Vue que desea
+desplegar:
+
+2. Ejecute el siguiente comando en la terminal (por el momento utilice el repositorio que
+aparece resaltado en rojo, y verifique que todo el tutorial funciona, más adelante deberá
+cambiarlo por su propio repositorio o el de su proyecto):
+Ejecutar en Terminal
+sudo git clone https://github.com/danielgara/curso-web-2026-final.git
+
+3. Ubíquese en la carpeta del proyecto Vue descargado ejecutando el siguiente comando:
+Ejecutar en Terminal
+cd curso-web-2026-final/frontend
+
+Crear la imagen Docker
+4. Ejecute el siguiente comando:
+Ejecutar en Terminal
+sudo docker image build -t vue-image .
+
+Crear el contenedor Docker
+5. Ejecute el siguiente comando:
+Ejecutar en Terminal
+sudo docker container run -d --name vue-container -p 80:80 vue-image
+
+Verificar la ejecución del proyecto
+6. Busque la dirección IP externa de su máquina virtual (según la siguiente figura), y acceda
+desde el navegador utilizando HTTP (NO debe usar HTTPS).
+
+•
+
+Ahora deberá ver su proyecto desplegado sin problemas.
+
+¡Felicidades! Acaba de desplegar su proyecto Vue en la nube.
+
+
