@@ -19,7 +19,7 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             typeorm_1.TypeOrmModule.forRoot({
                 type: 'sqlite',
-                database: 'database.sqlite',
+                database: process.env.SQLITE_PATH ?? 'database.sqlite',
                 autoLoadEntities: true,
                 synchronize: true,
             }),
